@@ -17,13 +17,13 @@ location = components.html(
                 accuracy: position.coords.accuracy
             };
             window.parent.postMessage(
-                {isStreamlitMessage: true, type: "streamlit:setComponentValue", value: coords},
+                {type: "streamlit:setComponentValue", value: JSON.stringify(coords)},
                 "*"
             );
         },
         function(error) {
             window.parent.postMessage(
-                {isStreamlitMessage: true, type: "streamlit:setComponentValue", value: null},
+                {type: "streamlit:setComponentValue", value: null},
                 "*"
             );
         }
@@ -33,12 +33,20 @@ location = components.html(
     height=0,
 )
 
-if location:
-    st.success("✅ Location Retrieved Successfully!")
-    st.write("Latitude:", location["latitude"])
-    st.write("Longitude:", location["longitude"])
-    st.write("Accuracy:", location["accuracy"], "meters")
+if location is not None:
+    try:
+        data = json.loads(location)
 
-    st.map({"lat": [location["latitude"]], "lon": [location["longitude"]]})
+        st.success("✅ Location Retrieved Successfully!")
+        st.write("Latitude:", data["latitude"])
+        st.write("Longitude:", data["longitude"])
+        st.write("Accuracy:", data["accuracy"], "meters")
+
+        st.map({"lat": [data["latitude"]], "lon": [data["longitude"]]})
+
+    except Exception as e:
+        st.error("Location received but parsing failed.")
+        st.write("Raw value:", location)
+
 else:
     st.warning("Waiting for location permission...")
