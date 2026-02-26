@@ -1,39 +1,44 @@
 import streamlit as st
-from streamlit_js_eval import get_geolocation
+import streamlit.components.v1 as components
+import json
 
-st.set_page_config(page_title="GPS Location Tracker", page_icon="📍")
+st.set_page_config(page_title="GPS Tracker")
 
-st.title("📍 Device GPS Location Tracker")
+st.title("📍 Device GPS Location")
 
-st.write("Click the button below to get your current GPS location.")
+location = components.html(
+    """
+    <script>
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const coords = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy
+            };
+            window.parent.postMessage(
+                {isStreamlitMessage: true, type: "streamlit:setComponentValue", value: coords},
+                "*"
+            );
+        },
+        function(error) {
+            window.parent.postMessage(
+                {isStreamlitMessage: true, type: "streamlit:setComponentValue", value: null},
+                "*"
+            );
+        }
+    );
+    </script>
+    """,
+    height=0,
+)
 
-# Button to trigger location request
-if st.button("Get Current Location"):
+if location:
+    st.success("✅ Location Retrieved Successfully!")
+    st.write("Latitude:", location["latitude"])
+    st.write("Longitude:", location["longitude"])
+    st.write("Accuracy:", location["accuracy"], "meters")
 
-    # Get location from browser
-    location = get_geolocation()
-
-    if location is None:
-        st.error("❌ Unable to retrieve location. Please allow location access and refresh the page.")
-    else:
-        try:
-            lat = location["coords"]["latitude"]
-            lon = location["coords"]["longitude"]
-            accuracy = location["coords"]["accuracy"]
-
-            st.success("✅ Location Retrieved Successfully!")
-
-            st.write("### 📌 Coordinates")
-            st.write(f"**Latitude:** {lat}")
-            st.write(f"**Longitude:** {lon}")
-            st.write(f"**Accuracy:** {accuracy} meters")
-
-            # Show on map
-            st.write("### 🗺️ Location on Map")
-            st.map({"lat": [lat], "lon": [lon]})
-
-        except Exception as e:
-            st.error(f"Error reading location data: {e}")
-
-st.markdown("---")
-st.info("⚠️ Make sure you allow location permission in your browser.")
+    st.map({"lat": [location["latitude"]], "lon": [location["longitude"]]})
+else:
+    st.warning("Waiting for location permission...")
